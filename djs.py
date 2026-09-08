@@ -532,7 +532,7 @@ def ffmpeg_encode(
         ]
 
     else:
-        raise RuntimeError()
+        raise RuntimeError(f"Unknown audiofile extension: ${ext}.")
 
     cmd += [
         *audio_args,
@@ -547,8 +547,9 @@ def ffmpeg_encode(
     )
 
     if proc.returncode != 0:
-        raise RuntimeError(
-            f"Command failed ({proc.returncode}): {' '.join(cmd)}\n{proc.stderr}")
+        err = f"Command failed ({proc.returncode}): "
+        err += f"{' '.join(cmd)}\n{proc.stderr}"
+        raise RuntimeError(err)
 
 
 # ===========================================================================
