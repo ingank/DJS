@@ -445,7 +445,8 @@ def first_audio_stream(info: dict) -> str | None:
     for _ in info.get("streams", []):
         if _.get("codec_type") == "audio":
             return _.get("codec_name")
-    raise RuntimeError()
+
+    return None
 
 
 def first_pic_index(info: dict) -> int | None:
@@ -454,8 +455,8 @@ def first_pic_index(info: dict) -> int | None:
             disp = _.get("disposition") or {}
             if disp.get("attached_pic") == 1:
                 return (_.get("index"))
-            else:
-                return None
+
+    return None
 
 
 def set_flac_tags(path: Path, tags: Dict[str, Any]) -> None:
@@ -640,7 +641,10 @@ def cmd_encode(args):
         dst = Path(START_DIR / stage_dir / rel_path.with_suffix(".flac"))
         dst.parent.mkdir(parents=True, exist_ok=True)
         info = ffprobe_json(src)
-        ffmpeg_encode(src, dst, first_pic_index(info))
+        fas = first_audio_stream(info)
+        assert fas
+        fpi = first_pic_index(info)
+        ffmpeg_encode(src, dst, fpi)
         digest, lufs, lra = analyze_audio(src, 3)
         mx_tags: Dict[str, Any] = {}
         mx_tags[f"{PRE_TAG}-HASH"] = digest
