@@ -642,7 +642,7 @@ def cmd_encode(args):
         dst.parent.mkdir(parents=True, exist_ok=True)
         info = ffprobe_json(src)
         fas = first_audio_stream(info)
-        assert fas
+        assert fas is not None
         fpi = first_pic_index(info)
         ffmpeg_encode(src, dst, fpi)
         digest, lufs, lra = analyze_audio(src, 3)
@@ -652,7 +652,7 @@ def cmd_encode(args):
         mx_tags[f"{PRE_TAG}-DATE"] = START_TIMESTAMP
         mx_tags[f"{PRE_TAG}-LUFS"] = f"{lufs:.1f}"
         mx_tags[f"{PRE_TAG}-LRA"] = f"{lra:.1f}"
-        mx_tags[f"{PRE_TAG}-CODEC"] = first_audio_stream(info)
+        mx_tags[f"{PRE_TAG}-CODEC"] = fas
         set_flac_tags(dst, mx_tags)
         emit_text(f"{rel_path}", rep_file)
         processed += 1
