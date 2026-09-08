@@ -454,7 +454,8 @@ def first_pic_index(info: dict) -> int | None:
             disp = _.get("disposition") or {}
             if disp.get("attached_pic") == 1:
                 return (_.get("index"))
-    return None
+            else:
+                return None
 
 
 def set_flac_tags(path: Path, tags: Dict[str, Any]) -> None:
