@@ -622,6 +622,7 @@ def cmd_dupes(args):
 
 
 def cmd_encode(args):
+    start_time = time.perf_counter()
     rep_file = report_file_name("encode", "log").open("w", encoding="utf-8")
     emit_header(rep_file)
     emit_scanning(rep_file)
@@ -652,6 +653,7 @@ def cmd_encode(args):
         processed += 1
 
     emit_processed_files(processed, rep_file)
+    emit_duration(time.perf_counter() - start_time, rep_file)
     emit_footer(rep_file)
     rep_file.close()
 
