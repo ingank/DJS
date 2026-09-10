@@ -116,15 +116,15 @@ def emit_processing(count: int, output: TextIO) -> None:
 
 
 def emit_resuming(count: int, output: TextIO) -> None:
-    emit_comment("Resuming:", f"{count} files", output)
+    emit_comment("Resuming:", f"{count} lines", output)
 
 
 def emit_skipping(count: int, output: TextIO) -> None:
     emit_comment("Skipping:", f"{count} directories", output)
 
 
-def emit_copied_lines(count: int, output: TextIO) -> None:
-    emit_comment("Copied:", f"{count} lines", output)
+def emit_resumed_lines(count: int, output: TextIO) -> None:
+    emit_comment("Resumed:", f"{count} lines", output)
 
 
 def emit_processed_files(count: int, output: TextIO) -> None:
