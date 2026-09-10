@@ -723,11 +723,13 @@ def cmd_hashscan(args):
     emit_header(rep_file)
 
     if args.filelist:
+
         filelist = Path(args.filelist)
         emit_reading(filelist, rep_file)
         files = parse_filelist(filelist)
 
     elif args.lastfilelist:
+
         if latest_find is None:
             raise RuntimeError("No previous find report found.")
 
@@ -736,28 +738,35 @@ def cmd_hashscan(args):
         files = parse_filelist(latest_find)
 
     else:
+
         emit_scanning(rep_file)
         files, skipped = find_files(START_DIR, AUDIO_EXTENSIONS)
 
     if args.resume:
+
         if latest_hashscan is None:
-            raise RuntimeError("No previous hashscan report found.")
 
-        short = latest_hashscan.relative_to(START_DIR)
-        emit_reading(short, rep_file)
-        previous_records = parse_hashlist(latest_hashscan)
-        completed = {path for _, path in previous_records}
-        emit_resuming(len(completed), rep_file)
-        files = [path for path in files if path not in completed]
+            emit_reading("No previous hashscan report found.", rep_file)
+            emit_resuming(0, rep_file)
+            emit_scanning(rep_file)
+            files, skipped = find_files(START_DIR, AUDIO_EXTENSIONS)
 
-    if skipped:
-        emit_skipping(len(skipped), rep_file)
+        else:
 
+            short = latest_hashscan.relative_to(START_DIR)
+            emit_reading(short, rep_file)
+            previous_records = parse_hashlist(latest_hashscan)
+            completed = {path for _, path in previous_records}
+            emit_resuming(len(completed), rep_file)
+            files = [path for path in files if path not in completed]
+
+    emit_skipping(len(skipped), rep_file) if skipped else None
     emit_processing(len(files), rep_file)
 
     for digest, path in previous_records:
+
         emit_text(f"{digest} {path}", rep_file)
-        copied += 1
+        resumed += 1
 
     for path in files:
 
@@ -765,9 +774,7 @@ def cmd_hashscan(args):
         emit_text(f"{digest} {path}", rep_file)
         processed += 1
 
-    if copied:
-        emit_copied_lines(copied, rep_file)
-
+    emit_resumed_lines(resumed, rep_file) if args.resume else None
     emit_processed_files(processed, rep_file)
     emit_duration(time.perf_counter() - start_time, rep_file)
     emit_footer(rep_file)
