@@ -712,20 +712,13 @@ def cmd_hashscan(args):
     its existing hash records are copied into the new report, and only the
     remaining files are hashed.
     """
+    skipped = 0
+    resumed = 0
+    processed = 0
     start_time = time.perf_counter()
-
     latest_find = latest_file("fl")
     latest_hashscan = latest_file("hl")
     previous_records: list[tuple[str, Path]] = []
-
-    mode = 3
-    mode = 1 if args.hash_only else mode
-    mode = 2 if args.loudness_only else mode
-
-    skipped = 0
-    copied = 0
-    processed = 0
-
     rep_file = report_file_name("hashscan", "hl").open("w", encoding="utf-8")
     emit_header(rep_file)
 
@@ -767,10 +760,9 @@ def cmd_hashscan(args):
         copied += 1
 
     for path in files:
-        digest, lufs, lra = analyze_audio(START_DIR / path, mode)
-        lufs = f"{lufs:5.1f}" if lufs else None
-        lra = f"{lra:4.1f}" if lra else None
-        emit_text(f"{digest} {lufs} {lra} {path}", rep_file)
+
+        digest, _, _ = analyze_audio(START_DIR / path, 1)
+        emit_text(f"{digest} {path}", rep_file)
         processed += 1
 
     if copied:
