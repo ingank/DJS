@@ -48,6 +48,7 @@ def stage_directory_name(command: str) -> Path:
     The directory name is derived from the current working directory,
     the command name, and the startup timestamp.
     """
+
     return Path(START_DIR / f".{command}__{START_TIMESTAMP}")
 
 
@@ -59,10 +60,12 @@ def report_file_name(command: str, format: str) -> Path:
     the command name, and the startup timestamp, using a '.txt'
     extension.
     """
+
     return Path(START_DIR / f"{command}__{START_TIMESTAMP}__{format}.txt")
 
 
 def latest_file(fmt: str) -> Path | None:
+
     files = START_DIR.glob(f"*__*__{fmt}.txt")
     latest = max(files, key=lambda p: p.name.rsplit("__", 2)[1], default=None)
     return latest
@@ -76,7 +79,9 @@ def emit_text(text: str, output: TextIO) -> None:
     line is written to the stream, followed by a newline, and the
     stream is flushed immediately.
     """
+
     print(text)
+
     if output:
         output.write(f"{text}\n")
         output.flush()
@@ -86,6 +91,7 @@ def emit_comment(text1: str, text2: str, output: TextIO) -> None:
     """
     Emit a comment line.
     """
+
     emit_text(f"# {text1:<15}{text2}", output)
 
 
@@ -93,6 +99,7 @@ def emit_header(output: TextIO) -> None:
     """
     Write a standard report header.
     """
+
     emit_comment("Directory:", f"{START_DIR}", output)
     emit_comment("Command:", f"{APP_NAME} {START_ARGS}", output)
     emit_comment("Timestamp:", f"{START_TIMESTAMP}", output)
@@ -100,46 +107,57 @@ def emit_header(output: TextIO) -> None:
 
 
 def emit_reading(path: Path, output: TextIO) -> None:
+
     emit_comment("Reading:", f"{path}", output)
 
 
 def emit_staging_area(path: Path, output: TextIO) -> None:
+
     emit_comment("Staging Area:", f".{SEP}{path}", output)
 
 
 def emit_scanning(output: TextIO) -> None:
+
     emit_comment("Scanning:", "Filesystem", output)
 
 
 def emit_processing(count: int, output: TextIO) -> None:
+
     emit_comment("Processing:", f"{count} files", output)
 
 
 def emit_resuming(count: int, output: TextIO) -> None:
+
     emit_comment("Resuming:", f"{count} lines", output)
 
 
 def emit_skipping(count: int, output: TextIO) -> None:
+
     emit_comment("Skipping:", f"{count} directories", output)
 
 
 def emit_resumed_lines(count: int, output: TextIO) -> None:
+
     emit_comment("Resumed:", f"{count} lines", output)
 
 
 def emit_processed_files(count: int, output: TextIO) -> None:
+
     emit_comment("Processed:", f"{count} files", output)
 
 
 def emit_listed(count: int, output: TextIO) -> None:
+
     emit_comment("Listed:", f"{count} files", output)
 
 
 def emit_hashed(count: int, output: TextIO) -> None:
+
     emit_comment("Hashed:", f"{count} files", output)
 
 
 def emit_duration(seconds: float, output: TextIO) -> None:
+
     hours = int(seconds // 3600)
     minutes = int((seconds % 3600) // 60)
     seconds_int = int(seconds % 60)
@@ -152,6 +170,7 @@ def emit_footer(output: TextIO) -> None:
     """
     Write a standard report footer.
     """
+
     emit_comment("Status:", "OK", output)
 
 
@@ -163,9 +182,11 @@ def parse_filelist(filelist: Path) -> list[Path]:
     lines are interpreted as relative file paths and returned as Path
     objects in the order they appear.
     """
+
     files: list[Path] = []
 
     with filelist.open("r", encoding="utf-8") as f:
+
         for line in f:
             line = line.strip()
 
@@ -186,9 +207,11 @@ def parse_hashlist(hashlist: Path) -> list[tuple[str, Path]]:
 
     Returns a list of (hash, Path) tuples in the order they appear.
     """
+
     records: list[tuple[str, Path]] = []
 
     with hashlist.open("r", encoding="utf-8") as f:
+
         for line in f:
             line = line.strip()
 
@@ -212,6 +235,7 @@ def find_files(start_dir: Path, extensions: list[str]) -> tuple[list[Path], list
     File extensions are matched case-insensitively, and symbolic links
     are not followed.
     """
+
     allowed_exts = {"." + ext.lower().lstrip(".") for ext in extensions}
     found_files: list[Path] = []
     skipped_dirs: list[Path] = []
@@ -225,11 +249,15 @@ def find_files(start_dir: Path, extensions: list[str]) -> tuple[list[Path], list
             continue
 
         with os.scandir(current_dir) as entries:
+
             for entry in entries:
+
                 if entry.is_dir(follow_symlinks=False):
                     dirs_to_visit.append(Path(entry.path))
+
                 elif entry.is_file(follow_symlinks=False):
                     path = Path(entry.path)
+
                     if path.suffix.lower() in allowed_exts:
                         found_files.append(path.relative_to(start_dir))
 
@@ -274,6 +302,7 @@ def analyze_audio(file: Path, mode: int) -> tuple[str | None, float | None, floa
         RuntimeError: If the analysis mode is invalid or FFmpeg
             fails to process the input file.
     """
+
     if mode == 1:
         ffmpeg_cmd = [
             "ffmpeg",
@@ -340,7 +369,6 @@ def analyze_audio(file: Path, mode: int) -> tuple[str | None, float | None, floa
     def drain_stderr() -> None:
 
         while True:
-
             chunk = proc.stderr.read(64 * 1024)
 
             if not chunk:
@@ -368,7 +396,6 @@ def analyze_audio(file: Path, mode: int) -> tuple[str | None, float | None, floa
                 pass
 
     finally:
-
         proc.stdout.close()
 
     ret = proc.wait()
@@ -376,19 +403,16 @@ def analyze_audio(file: Path, mode: int) -> tuple[str | None, float | None, floa
     stderr = b"".join(stderr_chunks)
 
     if ret != 0:
-
         raise RuntimeError(
             f"ffmpeg failed with code {ret} for {file}\n"
             f"{stderr.decode('utf-8', errors='replace')}"
         )
 
     digest = hasher.hexdigest() if hasher is not None else None
-
     lufs = None
     lra = None
 
     if mode in (2, 3):
-
         stderr_text = stderr.decode("utf-8", errors="replace")
         in_summary = False
 
@@ -402,14 +426,12 @@ def analyze_audio(file: Path, mode: int) -> tuple[str | None, float | None, floa
                 continue
 
             if "I:" in line and "LUFS" in line:
-
                 match = re.search(r"I:\s*(-?\d+(?:\.\d+)?)\s*LUFS", line)
 
                 if match:
                     lufs = float(match.group(1))
 
             elif "LRA:" in line and "LU" in line:
-
                 match = re.search(r"LRA:\s*(-?\d+(?:\.\d+)?)\s*LU", line)
 
                 if match:
@@ -419,6 +441,7 @@ def analyze_audio(file: Path, mode: int) -> tuple[str | None, float | None, floa
 
 
 def ffprobe_json(path: Path) -> dict:
+
     cmd = [
         "ffprobe",
         "-v", "error",
@@ -442,7 +465,9 @@ def ffprobe_json(path: Path) -> dict:
 
 
 def first_audio_stream(info: dict) -> str | None:
+
     for _ in info.get("streams", []):
+
         if _.get("codec_type") == "audio":
             return _.get("codec_name")
 
@@ -450,9 +475,12 @@ def first_audio_stream(info: dict) -> str | None:
 
 
 def first_pic_index(info: dict) -> int | None:
+
     for _ in info.get("streams", []):
+
         if _.get("codec_type") == "video":
             disp = _.get("disposition") or {}
+
             if disp.get("attached_pic") == 1:
                 return (_.get("index"))
 
@@ -460,15 +488,20 @@ def first_pic_index(info: dict) -> int | None:
 
 
 def set_flac_tags(path: Path, tags: Dict[str, Any]) -> None:
+
     flac_file = FLAC(path)
+
     for tag, value in tags.items():
         k = tag.lower()
         flac_file[k] = str(value)
+
     flac_file.save()
 
 
 def touch_flac_comment(path: Path):
+
     flac_file = FLAC(path)
+
     if "description" in flac_file:
         flac_file["COMMENT"] = flac_file["description"]
         del flac_file["description"]
@@ -479,7 +512,6 @@ def ffmpeg_encode(scr: Path, dst: Path, pic_idx: int | None) -> tuple[str, str]:
 
     mode = "Unknown"
     cover = "Unknown"
-
     cmd = [
         "ffmpeg",
         "-v", "error",
@@ -581,6 +613,7 @@ def cmd_copy(args) -> None:
         files = {path for _, path in data}
 
     elif args.lastfilelist:
+
         if latest_find is None:
             raise RuntimeError("No previous find report found.")
 
@@ -589,6 +622,7 @@ def cmd_copy(args) -> None:
         files = parse_filelist(latest_find)
 
     elif args.lasthashlist:
+
         if latest_hashscan is None:
             raise RuntimeError("No previous hashscan report found.")
 
@@ -622,14 +656,17 @@ def cmd_copy(args) -> None:
 
 
 def cmd_diff(args):
+
     print(f"Dummy: diff ({args.hashfile1}, {args.hashfile2})")
 
 
 def cmd_dupes(args):
+
     print("Dummy: dupes")
 
 
 def cmd_encode(args):
+
     start_time = time.perf_counter()
     rep_file = report_file_name("encode", "log").open("w", encoding="utf-8")
     emit_header(rep_file)
@@ -672,6 +709,7 @@ def cmd_encode(args):
 
 
 def cmd_finalize(args):
+
     print("Dummy: finalize")
 
 
@@ -684,14 +722,15 @@ def cmd_find(args):
     (found, skipped, processed) followed by the list of all discovered
     files.
     """
+
     report_file = report_file_name("find", "fl").open("w", encoding="utf-8")
     emit_header(report_file)
     emit_scanning(report_file)
     files, skipped = find_files(START_DIR, AUDIO_EXTENSIONS)
     emit_skipping(len(skipped), report_file)
     emit_processing(len(files), report_file)
-
     processed = 0
+
     for file in files:
         emit_text(f"{file}", report_file)
         processed += 1
@@ -702,6 +741,7 @@ def cmd_find(args):
 
 
 def cmd_hashread(args):
+
     print("Dummy: hashread")
 
 
@@ -719,6 +759,7 @@ def cmd_hashscan(args):
     its existing hash records are copied into the new report, and only the
     remaining files are hashed.
     """
+
     skipped = 0
     resumed = 0
     processed = 0
@@ -730,7 +771,6 @@ def cmd_hashscan(args):
     emit_header(rep_file)
 
     if args.filelist:
-
         filelist = Path(args.filelist)
         emit_reading(filelist, rep_file)
         files = parse_filelist(filelist)
@@ -745,21 +785,18 @@ def cmd_hashscan(args):
         files = parse_filelist(latest_find)
 
     else:
-
         emit_scanning(rep_file)
         files, skipped = find_files(START_DIR, AUDIO_EXTENSIONS)
 
     if args.resume:
 
         if latest_hashscan is None:
-
             emit_reading("No previous hashscan report found.", rep_file)
             emit_resuming(0, rep_file)
             emit_scanning(rep_file)
             files, skipped = find_files(START_DIR, AUDIO_EXTENSIONS)
 
         else:
-
             short = latest_hashscan.relative_to(START_DIR)
             emit_reading(short, rep_file)
             previous_records = parse_hashlist(latest_hashscan)
@@ -771,12 +808,10 @@ def cmd_hashscan(args):
     emit_processing(len(files), rep_file)
 
     for digest, path in previous_records:
-
         emit_text(f"{digest} {path}", rep_file)
         resumed += 1
 
     for path in files:
-
         digest, _, _ = analyze_audio(START_DIR / path, 1)
         emit_text(f"{digest} {path}", rep_file)
         processed += 1
@@ -789,26 +824,32 @@ def cmd_hashscan(args):
 
 
 def cmd_hashwrite(args):
+
     print("Dummy: hashwrite")
 
 
 def cmd_match(args):
+
     print("Dummy: match")
 
 
 def cmd_merge(args):
+
     print("Dummy: merge")
 
 
 def cmd_move(args):
+
     print("Dummy: move")
 
 
 def cmd_remux(args):
+
     print("Dummy: remux")
 
 
 def cmd_sort(args):
+
     print("Dummy: sort")
 
 
@@ -819,10 +860,10 @@ def cmd_stats(args):
     Displays the total file count, counts by extension, and a per-directory
     distribution of audio formats.
     """
+
     latest_find = latest_file("fl")
     latest_hashscan = latest_file("hl")
     skipped = 0
-
     rep_file = report_file_name("stats", "log").open("w", encoding="utf-8")
     emit_header(rep_file)
 
@@ -838,6 +879,7 @@ def cmd_stats(args):
         files = {path for _, path in data}
 
     elif args.lastfilelist:
+
         if latest_find is None:
             raise RuntimeError("No previous find report found.")
 
@@ -846,6 +888,7 @@ def cmd_stats(args):
         files = parse_filelist(latest_find)
 
     elif args.lasthashlist:
+
         if latest_hashscan is None:
             raise RuntimeError("No previous hashscan report found.")
 
@@ -893,6 +936,7 @@ def cmd_stats(args):
 
     if skipped:
         emit_text(f"Skipped directories: {len(skipped)}", rep_file)
+
         for directory in sorted(skipped):
             emit_text(f"   .{SEP}{directory}", rep_file)
 
@@ -901,6 +945,7 @@ def cmd_stats(args):
 
 
 def cmd_tagexport(args):
+
     print("Dummy: tagexport")
 
 
@@ -909,11 +954,14 @@ def cmd_helpall(args):
     Display the main help followed by the help text
     of every available subcommand.
     """
+
     parser = args.parser
     parser.print_help()
 
     for action in parser._actions:
+
         if isinstance(action, argparse._SubParsersAction):
+
             for name, subparser in action.choices.items():
                 print()
                 print("-" * (len(name) + 9))
