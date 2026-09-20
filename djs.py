@@ -475,11 +475,10 @@ def touch_flac_comment(path: Path):
         flac_file.save()
 
 
-def ffmpeg_encode(
-        scr: Path,
-        dst: Path,
-        pic_idx: int | None,
-) -> list[str]:
+def ffmpeg_encode(scr: Path, dst: Path, pic_idx: int | None) -> tuple[str, str]:
+
+    mode = "Unknown"
+    cover = "Unknown"
 
     cmd = [
         "ffmpeg",
@@ -489,6 +488,7 @@ def ffmpeg_encode(
 
     # No embedded cover found: use external placeholder image
     if pic_idx is None:
+        cover = "placeholder"
         cmd += ["-i", str(NO_COVER)]
 
     # Preserve all metadata; mapping audiostream
@@ -505,6 +505,7 @@ def ffmpeg_encode(
         ]
     # Use embedded cover: center-crop to square and resize
     else:
+        cover = "original"
         crop = "crop='min(iw,ih)':"
         crop += "'min(iw,ih)':"
         crop += "'(iw-min(iw,ih))/2':"
@@ -516,16 +517,18 @@ def ffmpeg_encode(
         ]
 
     cmd += ["-disposition:v:0", "attached_pic"]
-
     ext = scr.suffix.lower().lstrip(".")
 
     if ext in AUDIO_FLAC:
+        mode = "audio-copy-flacstream"
         audio_args = ["-c:a", "copy"]
 
     elif ext in AUDIO_LOSSLESS:
+        mode = "audio-encode-lossless"
         audio_args = ["-c:a", "flac"]
 
     elif ext in AUDIO_LOSSY:
+        mode = "audio-encode-lossy"
         audio_args = [
             "-c:a", "flac",
             "-sample_fmt", "s16",
@@ -550,6 +553,8 @@ def ffmpeg_encode(
         err = f"Command failed ({proc.returncode}): "
         err += f"{' '.join(cmd)}\n{proc.stderr}"
         raise RuntimeError(err)
+
+    return mode, cover
 
 
 # ===========================================================================
@@ -645,7 +650,7 @@ def cmd_encode(args):
         fas = first_audio_stream(info)
         assert fas is not None
         fpi = first_pic_index(info)
-        ffmpeg_encode(src, dst, fpi)
+        mode, cover = ffmpeg_encode(src, dst, fpi)
         digest, lufs, lra = analyze_audio(src, 3)
         mx_tags: Dict[str, Any] = {}
         mx_tags[f"{PRE_TAG}-HASH"] = digest
@@ -654,6 +659,8 @@ def cmd_encode(args):
         mx_tags[f"{PRE_TAG}-LUFS"] = f"{lufs:.1f}"
         mx_tags[f"{PRE_TAG}-LRA"] = f"{lra:.1f}"
         mx_tags[f"{PRE_TAG}-CODEC"] = fas
+        mx_tags[f"{PRE_TAG}-MODE"] = mode
+        mx_tags[f"{PRE_TAG}-COVER"] = cover
         set_flac_tags(dst, mx_tags)
         emit_text(f"{rel_path}", rep_file)
         processed += 1
